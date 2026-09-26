@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corruption Free India - Citizen Empowerment Portal</title>
+    <title>Corruption Free India - Community Video & News</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -55,6 +55,7 @@
                 <button type="button" onclick="openSearchDialog()" aria-label="Search this site" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">
                     <i class="fa-solid fa-magnifying-glass"></i><span class="hidden sm:inline sm:ml-2">Search</span>
                 </button>
+                <button id="accountButton" type="button" onclick="openAuthDialog()" class="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Sign in</button>
                 <button onclick="switchTab('report')" class="bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition flex items-center space-x-2">
                     <i class="fa-solid fa-shield-halved"></i>
                     <span class="hidden sm:inline">Demo form</span>
@@ -241,6 +242,15 @@
                         <button data-video-mode="latest" onclick="setVideoFeedMode('latest')" class="video-side-link w-full flex items-center gap-4 rounded-lg px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100">
                             <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Latest
                         </button>
+                        <button data-video-mode="trending" onclick="setVideoFeedMode('trending')" class="video-side-link w-full flex items-center gap-4 rounded-lg px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                            <i class="fa-solid fa-arrow-trend-up w-5 text-center"></i> Trending
+                        </button>
+                        <button data-video-mode="following" onclick="setVideoFeedMode('following')" class="video-side-link w-full flex items-center gap-4 rounded-lg px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                            <i class="fa-solid fa-user-group w-5 text-center"></i> Following
+                        </button>
+                        <button data-video-mode="saved" onclick="setVideoFeedMode('saved')" class="video-side-link w-full flex items-center gap-4 rounded-lg px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                            <i class="fa-solid fa-bookmark w-5 text-center"></i> Saved videos
+                        </button>
                         <button data-video-mode="news" onclick="setVideoFeedMode('news')" class="video-side-link w-full flex items-center gap-4 rounded-lg px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100">
                             <i class="fa-solid fa-newspaper w-5 text-center"></i> Corruption news
                         </button>
@@ -261,11 +271,19 @@
 
                 <div class="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
                     <div class="flex flex-col gap-5">
+                        <nav class="flex gap-2 overflow-x-auto pb-1 md:hidden" aria-label="Video feeds">
+                            <button onclick="setVideoFeedMode('all')" class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white">For you</button>
+                            <button onclick="setVideoFeedMode('latest')" class="rounded-full bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Latest</button>
+                            <button onclick="setVideoFeedMode('trending')" class="rounded-full bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Trending</button>
+                            <button onclick="setVideoFeedMode('following')" class="rounded-full bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Following</button>
+                            <button onclick="setVideoFeedMode('saved')" class="rounded-full bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Saved</button>
+                            <button onclick="setVideoFeedMode('news')" class="rounded-full bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">News</button>
+                        </nav>
                         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div>
                                 <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Citizen video community</p>
-                                <h2 class="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Public interest videos</h2>
-                                <p class="mt-1 text-sm text-slate-500">Watch publisher videos and share content you have permission to post.</p>
+                                <h2 id="videoFeedHeading" class="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Community video feed</h2>
+                                <p class="mt-1 text-sm text-slate-500">Follow local creators, share updates, save videos, and join the discussion.</p>
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 <button id="refreshVideosButton" onclick="loadVideos()" class="rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition">
@@ -306,41 +324,10 @@
                         </div>
                         <div id="supabaseSetupGuide" class="hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                             <h3 class="font-bold text-slate-900">Create the videos table</h3>
-                            <p class="text-sm text-slate-600 mt-1 mb-3">Open this project’s SQL Editor, paste the SQL below, and select <strong>Run</strong>. Visitors can read videos, but only signed-in users can publish. This page has no sign-in UI yet, so online publishing stays disabled until authentication and storage policies are deliberately configured.</p>
-                            <pre id="supabaseSetupSql" class="overflow-x-auto rounded-lg bg-slate-900 p-4 text-xs text-slate-100 whitespace-pre-wrap">create table public.videos (
-  id bigint generated by default as identity primary key,
-  title text not null check (char_length(title) between 1 and 120),
-  state text not null check (char_length(state) between 1 and 60),
-  city text check (city is null or char_length(city) <= 60),
-  description text check (description is null or char_length(description) <= 500),
-  video_url text not null check (
-    char_length(video_url) <= 2048 and (
-      video_url ~* '^https://(www\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be|vimeo\.com|player\.vimeo\.com|dailymotion\.com|dai\.ly)/'
-      or video_url like 'https://luzjxwwjhxysxwhkzydd.supabase.co/storage/v1/object/public/citizen-videos/%'
-    )
-  ),
-  created_at timestamptz not null default now()
-);
-
-alter table public.videos enable row level security;
-
-create policy "Anyone can view videos"
-on public.videos for select to anon, authenticated
-using (true);
-
-drop policy if exists "Anyone can upload video records" on public.videos;
-drop policy if exists "Authenticated users can upload validated video records" on public.videos;
-
-create policy "Authenticated users can upload validated video records"
-on public.videos for insert to authenticated
-with check (
-  char_length(title) between 1 and 120
-  and char_length(state) between 1 and 60
-  and (city is null or char_length(city) <= 60)
-  and (description is null or char_length(description) <= 500)
-);</pre>
+                            <p class="text-sm text-slate-600 mt-1 mb-3">Set up accounts, profiles, videos, likes, comments, follows, saved videos, and private upload rules using the included SQL migration.</p>
                             <div class="mt-3 flex flex-wrap gap-3">
                                 <button onclick="copySupabaseSetupSql()" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-bold text-white hover:bg-slate-700"><i class="fa-solid fa-copy mr-2"></i>Copy SQL</button>
+                                <a href="/social-feed-setup.sql" download class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Download SQL</a>
                                 <a href="https://supabase.com/dashboard/project/luzjxwwjhxysxwhkzydd/sql/new" target="_blank" rel="noopener noreferrer" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700">Open Supabase SQL Editor <i class="fa-solid fa-arrow-up-right-from-square ml-1"></i></a>
                                 <button onclick="loadVideos()" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">I ran the SQL — retry</button>
                             </div>
@@ -349,6 +336,7 @@ with check (
                         <p id="videoRefreshStatus" aria-live="polite" class="text-xs text-slate-500">Feed checks for new videos every minute while this page is open.</p>
                         <div id="videoFeedSection">
                             <div id="videoFeed" class="grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"></div>
+                            <button id="loadMoreVideosButton" type="button" onclick="loadVideos(true)" class="mx-auto mt-8 hidden rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Load more videos</button>
                         </div>
                         <section id="corruptionNewsSection" class="hidden" aria-labelledby="corruptionNewsHeading">
                             <div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -412,6 +400,52 @@ with check (
                         </div>
                     </div>
                 </form>
+            </div>
+
+            <div id="authDialog" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onclick="if(event.target === this) closeAuthDialog()">
+                <form id="authForm" onsubmit="submitAuth(event)" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
+                    <div class="mb-6 flex items-start justify-between">
+                        <div>
+                            <h3 id="authDialogTitle" class="text-xl font-bold text-slate-900">Sign in</h3>
+                            <p id="authDialogDescription" class="mt-1 text-sm text-slate-500">Sign in to follow creators and join the community.</p>
+                        </div>
+                        <button type="button" onclick="closeAuthDialog()" aria-label="Close sign in" class="rounded-full p-2 text-slate-500 hover:bg-slate-100"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <label id="authUsernameField" class="mb-4 hidden block text-xs font-bold uppercase text-slate-700">Display name
+                        <input id="authUsername" type="text" maxlength="32" autocomplete="nickname" class="mt-1 w-full rounded-lg border border-slate-300 p-3 text-sm font-normal normal-case outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Your public creator name">
+                    </label>
+                    <label class="mb-4 block text-xs font-bold uppercase text-slate-700">Email
+                        <input id="authEmail" type="email" required maxlength="254" autocomplete="email" class="mt-1 w-full rounded-lg border border-slate-300 p-3 text-sm font-normal normal-case outline-none focus:ring-2 focus:ring-emerald-500">
+                    </label>
+                    <label class="mb-4 block text-xs font-bold uppercase text-slate-700">Password
+                        <input id="authPassword" type="password" required minlength="8" maxlength="128" autocomplete="current-password" class="mt-1 w-full rounded-lg border border-slate-300 p-3 text-sm font-normal normal-case outline-none focus:ring-2 focus:ring-emerald-500">
+                    </label>
+                    <p id="authMessage" class="mb-4 hidden rounded-lg p-3 text-sm" aria-live="polite"></p>
+                    <button id="authSubmitButton" type="submit" class="w-full rounded-lg bg-emerald-600 px-5 py-3 font-bold text-white hover:bg-emerald-700 disabled:bg-slate-400">Sign in</button>
+                    <button id="authModeToggle" type="button" onclick="toggleAuthMode()" class="mt-4 w-full text-sm font-semibold text-emerald-700 hover:underline">New here? Create an account</button>
+                    <button id="authSignOutButton" type="button" onclick="signOut()" class="mt-4 hidden w-full rounded-lg border border-slate-300 px-5 py-3 font-bold text-slate-700 hover:bg-slate-50">Sign out</button>
+                </form>
+            </div>
+
+            <div id="commentsDialog" class="fixed inset-0 z-[75] hidden items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onclick="if(event.target === this) closeComments()">
+                <section class="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="commentsTitle">
+                    <div class="flex items-center justify-between border-b border-slate-200 p-4">
+                        <div>
+                            <h3 id="commentsTitle" class="font-bold text-slate-900">Discussion</h3>
+                            <p id="commentsVideoTitle" class="mt-1 line-clamp-1 text-xs text-slate-500"></p>
+                        </div>
+                        <button type="button" onclick="closeComments()" aria-label="Close comments" class="rounded-full p-2 text-slate-500 hover:bg-slate-100"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div id="commentsList" class="min-h-32 flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite"></div>
+                    <form id="commentForm" onsubmit="submitComment(event)" class="border-t border-slate-200 p-4">
+                        <label for="commentText" class="sr-only">Write a comment</label>
+                        <textarea id="commentText" maxlength="1000" rows="2" required placeholder="Add a thoughtful comment..." class="w-full rounded-xl border border-slate-300 p-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                        <div class="mt-2 flex items-center justify-between gap-3">
+                            <p id="commentMessage" class="text-xs text-slate-500" aria-live="polite"></p>
+                            <button id="commentSubmitButton" type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700">Comment</button>
+                        </div>
+                    </form>
+                </section>
             </div>
         </section>
 
@@ -515,6 +549,7 @@ with check (
         <p class="text-slate-500">For emergencies, call the national emergency number 112. For anti-corruption complaints, use the relevant State/UT ACB's official channel.</p>
         <nav aria-label="Project source and security documents" class="mt-4 flex flex-wrap justify-center gap-4">
             <a href="/index.html" download="corruption-free-india.html" class="hover:text-white">Download HTML source</a>
+            <a href="/social-feed-setup.sql" download class="hover:text-white">Supabase social setup SQL</a>
             <a href="/README.md" class="hover:text-white">Project documentation</a>
             <a href="/SECURITY.md" class="hover:text-white">Security notes</a>
             <a href="/LICENSE" class="hover:text-white">MIT License</a>
@@ -742,6 +777,7 @@ with check (
         const CORRUPTION_NEWS_TERMS = /\b(corrupt(?:ion|ed)?|brib(?:e|ery|es)|graft|vigilance|anti[- ]corruption|anti-graft|kickback|disproportionate assets|money laundering|lokayukta|prevention of corruption|fraud|scam|extortion|embezzlement|misappropriation|cbi|enforcement directorate|ed raid|anti-corruption bureau)\b|भ्रष्टाचार|रिश्वत|घोटाला|भ्रष्टाचारी/i;
         const NEWS_CACHE_STORAGE_KEY = 'cfi_corruption_news_cache_v2';
         const NEWS_REFRESH_INTERVAL = 30 * 60_000;
+        const VIDEO_PAGE_SIZE = 40;
         const NEWS_TOPICS = [
             { id: 'all', label: 'All stories', terms: null },
             { id: 'bribery', label: 'Bribery', terms: /\b(brib(?:e|ery|es)|kickback)\b|रिश्वत/i },
@@ -751,6 +787,17 @@ with check (
         let demoVideos = [];
         let onlineVideos = [];
         let corruptionNewsItems = [];
+        let currentUser = null;
+        let authMode = 'signin';
+        let activeCommentVideo = null;
+        let videoLikeCounts = new Map();
+        let videoCommentCounts = new Map();
+        let likedVideoIds = new Set();
+        let savedVideoIds = new Set();
+        let followedCreatorIds = new Set();
+        let creatorNames = new Map();
+        let nextVideoOffset = 0;
+        let hasMoreVideos = false;
         let isLoadingVideos = false;
         let isLoadingNews = false;
         let videoFeedMode = 'news';
@@ -771,6 +818,10 @@ with check (
         }
 
         function openVideoUpload() {
+            if (supabaseClient && !currentUser) {
+                openAuthDialog();
+                return;
+            }
             const dialog = document.getElementById('videoUploadDialog');
             dialog.classList.remove('hidden');
             dialog.classList.add('flex');
@@ -797,6 +848,15 @@ with check (
         function setVideoFeedMode(mode) {
             videoFeedMode = mode;
             const isNews = mode === 'news';
+            const headings = {
+                all: 'Community video feed',
+                latest: 'Latest videos',
+                trending: 'Trending videos',
+                following: 'Videos from creators you follow',
+                saved: 'Your saved videos',
+                news: 'Latest corruption-related reporting'
+            };
+            document.getElementById('videoFeedHeading').textContent = headings[mode] || headings.all;
             document.getElementById('videoFeedSection').classList.toggle('hidden', isNews);
             document.getElementById('videoFilters').classList.toggle('hidden', isNews);
             document.getElementById('videoStateFilter').classList.toggle('hidden', isNews);
@@ -817,11 +877,6 @@ with check (
                 setVideoSourceFilter('all');
                 return;
             }
-            if (mode === 'latest') {
-                onlineVideos.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-                demoVideos.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-                renderVideos();
-            }
             if (isNews) {
                 renderCorruptionNews();
                 loadCorruptionNews();
@@ -833,6 +888,256 @@ with check (
         function updateOnlineVideoSearchLink() {
             const searchTerm = document.getElementById('videoSearch').value.trim() || 'corruption news India';
             document.getElementById('onlineVideoSearchLink').href = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`;
+        }
+
+        function openAuthDialog() {
+            const dialog = document.getElementById('authDialog');
+            dialog.classList.remove('hidden');
+            dialog.classList.add('flex');
+            updateAuthDialog();
+            if (!supabaseClient) updateAuthDialog('Online accounts are not configured for this site.');
+            if (currentUser) {
+                document.getElementById('authSignOutButton').focus();
+            } else {
+                document.getElementById('authEmail').focus();
+            }
+        }
+
+        function closeAuthDialog() {
+            const dialog = document.getElementById('authDialog');
+            dialog.classList.add('hidden');
+            dialog.classList.remove('flex');
+        }
+
+        function updateAuthDialog(message = '', isError = false) {
+            const signedIn = Boolean(currentUser);
+            const messageBox = document.getElementById('authMessage');
+            document.getElementById('authDialogTitle').textContent = signedIn ? 'Your creator account' : authMode === 'signup' ? 'Create your account' : 'Sign in';
+            document.getElementById('authDialogDescription').textContent = signedIn
+                ? `Signed in as ${currentUser.email || 'community creator'}.`
+                : 'Sign in to publish videos, follow creators, save posts, and comment.';
+            document.getElementById('authUsernameField').classList.toggle('hidden', signedIn || authMode !== 'signup');
+            document.getElementById('authEmail').closest('label').classList.toggle('hidden', signedIn);
+            document.getElementById('authPassword').closest('label').classList.toggle('hidden', signedIn);
+            document.getElementById('authSubmitButton').classList.toggle('hidden', signedIn);
+            document.getElementById('authModeToggle').classList.toggle('hidden', signedIn);
+            document.getElementById('authSignOutButton').classList.toggle('hidden', !signedIn);
+            document.getElementById('authSubmitButton').textContent = authMode === 'signup' ? 'Create account' : 'Sign in';
+            document.getElementById('authModeToggle').textContent = authMode === 'signup' ? 'Already have an account? Sign in' : 'New here? Create an account';
+            messageBox.textContent = message;
+            messageBox.className = `mb-4 rounded-lg p-3 text-sm ${message ? (isError ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700') : 'hidden'}`;
+        }
+
+        function toggleAuthMode() {
+            authMode = authMode === 'signin' ? 'signup' : 'signin';
+            updateAuthDialog();
+            document.getElementById('authPassword').setAttribute('autocomplete', authMode === 'signup' ? 'new-password' : 'current-password');
+        }
+
+        async function submitAuth(event) {
+            event.preventDefault();
+            if (!supabaseClient) {
+                updateAuthDialog('Online accounts are not configured for this site.', true);
+                return;
+            }
+            const button = document.getElementById('authSubmitButton');
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const username = document.getElementById('authUsername').value.trim();
+            button.disabled = true;
+            button.textContent = authMode === 'signup' ? 'Creating account...' : 'Signing in...';
+            try {
+                if (authMode === 'signup') {
+                    if (!/^[a-zA-Z0-9_]{2,32}$/.test(username)) {
+                        updateAuthDialog('Display name must be 2–32 letters, numbers, or underscores.', true);
+                        return;
+                    }
+                    const { data, error } = await supabaseClient.auth.signUp({
+                        email,
+                        password,
+                        options: { data: { username }, emailRedirectTo: `${location.origin}${location.pathname}` }
+                    });
+                    if (error) throw error;
+                    if (!data.session) {
+                        updateAuthDialog('Check your email to confirm the account, then sign in here.');
+                    } else {
+                        updateAuthDialog('Account created. Welcome to the community.');
+                    }
+                } else {
+                    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    updateAuthDialog('Signed in successfully.');
+                }
+            } catch (error) {
+                console.error('Account sign-in failed:', error);
+                updateAuthDialog(error.message || 'Could not authenticate. Check the email and password, then try again.', true);
+            } finally {
+                button.disabled = false;
+                button.textContent = authMode === 'signup' ? 'Create account' : 'Sign in';
+            }
+        }
+
+        async function signOut() {
+            if (!supabaseClient) return;
+            try {
+                const { error } = await supabaseClient.auth.signOut();
+                if (error) throw error;
+                updateAuthDialog('You are signed out.');
+                closeAuthDialog();
+            } catch (error) {
+                console.error('Could not sign out:', error);
+                updateAuthDialog(error.message || 'Could not sign out. Please try again.', true);
+            }
+        }
+
+        async function updateCurrentUser(user) {
+            currentUser = user;
+            const button = document.getElementById('accountButton');
+            button.textContent = user ? (user.email?.split('@')[0] || 'Account') : 'Sign in';
+            button.setAttribute('aria-label', user ? `Account: ${user.email || 'signed in'}` : 'Sign in to your account');
+            updateAuthDialog();
+            if (supabaseClient) await loadVideos();
+            if (!document.getElementById('authDialog').classList.contains('hidden')) updateAuthDialog();
+        }
+
+        async function requireSignedIn() {
+            if (currentUser) return true;
+            openAuthDialog();
+            updateAuthDialog('Sign in to use this community feature.', true);
+            return false;
+        }
+
+        function showSocialNotice(message, isError = false) {
+            const notice = document.getElementById('videoModeNotice');
+            notice.textContent = message;
+            notice.className = `mb-6 rounded-xl border p-4 text-sm ${isError ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-blue-200 bg-blue-50 text-blue-800'}`;
+            notice.classList.remove('hidden');
+        }
+
+        async function toggleVideoLike(videoId) {
+            if (!await requireSignedIn()) return;
+            const liked = likedVideoIds.has(videoId);
+            const result = liked
+                ? await supabaseClient.from('video_likes').delete().eq('video_id', videoId).eq('user_id', currentUser.id)
+                : await supabaseClient.from('video_likes').insert({ video_id: videoId, user_id: currentUser.id });
+            if (result.error) {
+                console.error('Could not update video like:', result.error);
+                showSocialNotice('Could not update your like. Refresh the feed and try again.', true);
+                return;
+            }
+            await loadVideos();
+        }
+
+        async function toggleSavedVideo(videoId) {
+            if (!await requireSignedIn()) return;
+            const saved = savedVideoIds.has(videoId);
+            const result = saved
+                ? await supabaseClient.from('video_saves').delete().eq('video_id', videoId).eq('user_id', currentUser.id)
+                : await supabaseClient.from('video_saves').insert({ video_id: videoId, user_id: currentUser.id });
+            if (result.error) {
+                console.error('Could not update saved videos:', result.error);
+                showSocialNotice('Could not update saved videos. Refresh the feed and try again.', true);
+                return;
+            }
+            await loadVideos();
+        }
+
+        async function toggleCreatorFollow(creatorId) {
+            if (!creatorId) return;
+            if (!await requireSignedIn()) return;
+            if (creatorId === currentUser.id) {
+                showSocialNotice('You are viewing your own creator post.');
+                return;
+            }
+            const following = followedCreatorIds.has(creatorId);
+            const result = following
+                ? await supabaseClient.from('creator_follows').delete().eq('creator_id', creatorId).eq('follower_id', currentUser.id)
+                : await supabaseClient.from('creator_follows').insert({ creator_id: creatorId, follower_id: currentUser.id });
+            if (result.error) {
+                console.error('Could not update followed creators:', result.error);
+                showSocialNotice('Could not update your following list. Refresh and try again.', true);
+                return;
+            }
+            if (following) followedCreatorIds.delete(creatorId);
+            else followedCreatorIds.add(creatorId);
+            renderVideos();
+        }
+
+        async function openComments(videoId) {
+            const video = onlineVideos.find(item => item.id === videoId);
+            if (!video || !supabaseClient) return;
+            activeCommentVideo = videoId;
+            document.getElementById('commentsVideoTitle').textContent = video.title;
+            document.getElementById('commentText').value = '';
+            document.getElementById('commentMessage').textContent = '';
+            document.getElementById('commentsDialog').classList.remove('hidden');
+            document.getElementById('commentsDialog').classList.add('flex');
+            await loadComments(videoId);
+        }
+
+        function closeComments() {
+            const dialog = document.getElementById('commentsDialog');
+            dialog.classList.add('hidden');
+            dialog.classList.remove('flex');
+            activeCommentVideo = null;
+        }
+
+        async function loadComments(videoId) {
+            const list = document.getElementById('commentsList');
+            list.textContent = 'Loading discussion...';
+            const { data, error } = await supabaseClient
+                .from('video_comments')
+                .select('id,user_id,body,created_at,profiles(username)')
+                .eq('video_id', videoId)
+                .order('created_at', { ascending: true })
+                .limit(100);
+            if (error) {
+                console.error('Could not load video comments:', error);
+                list.textContent = 'Discussion could not be loaded. Check the Supabase setup and try again.';
+                return;
+            }
+            if (!data.length) {
+                list.textContent = 'No comments yet. Be the first to join the discussion.';
+                return;
+            }
+            list.replaceChildren(...data.map(comment => {
+                const item = document.createElement('article');
+                item.className = 'rounded-xl bg-slate-50 p-3';
+                const author = document.createElement('p');
+                author.className = 'text-xs font-bold text-slate-800';
+                author.textContent = comment.profiles?.username || 'Community member';
+                const body = document.createElement('p');
+                body.className = 'mt-1 whitespace-pre-wrap break-words text-sm text-slate-700';
+                body.textContent = comment.body;
+                item.append(author, body);
+                return item;
+            }));
+        }
+
+        async function submitComment(event) {
+            event.preventDefault();
+            if (!activeCommentVideo || !await requireSignedIn()) return;
+            const button = document.getElementById('commentSubmitButton');
+            const body = document.getElementById('commentText').value.trim();
+            if (!body || body.length > 1000) return;
+            button.disabled = true;
+            try {
+                const { error } = await supabaseClient.from('video_comments').insert({
+                    video_id: activeCommentVideo,
+                    user_id: currentUser.id,
+                    body
+                });
+                if (error) throw error;
+                document.getElementById('commentText').value = '';
+                document.getElementById('commentMessage').textContent = 'Comment posted.';
+                await loadComments(activeCommentVideo);
+                await loadVideos();
+            } catch (error) {
+                console.error('Could not post video comment:', error);
+                document.getElementById('commentMessage').textContent = 'Could not post the comment. Try again after checking your connection.';
+            } finally {
+                button.disabled = false;
+            }
         }
 
         function parsePublicVideoLink(value) {
@@ -877,14 +1182,16 @@ with check (
         }
 
         async function copySupabaseSetupSql() {
-            const sql = document.getElementById('supabaseSetupSql').textContent;
             const status = document.getElementById('supabaseCopyStatus');
             try {
+                const response = await fetch('/social-feed-setup.sql');
+                if (!response.ok) throw new Error(`SQL setup file returned HTTP ${response.status}`);
+                const sql = await response.text();
                 await navigator.clipboard.writeText(sql);
                 status.textContent = 'SQL copied. Paste it into the Supabase SQL Editor and select Run.';
             } catch (error) {
                 console.error('Could not copy setup SQL:', error);
-                status.textContent = 'Copy was blocked by the browser. Select and copy the SQL shown above.';
+                status.textContent = 'Could not copy setup SQL. Download social-feed-setup.sql, then paste its contents into the Supabase SQL Editor.';
             }
         }
 
@@ -916,10 +1223,12 @@ with check (
                 state: document.getElementById('videoState').value.trim(),
                 city: document.getElementById('videoCity').value.trim(),
                 description: document.getElementById('videoDescription').value.trim(),
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                user_id: currentUser?.id || null
             };
             button.disabled = true;
             button.textContent = link ? 'Sharing...' : 'Uploading...';
+            let uploadedObjectPath = '';
 
             try {
                 if (supabaseClient) {
@@ -935,10 +1244,10 @@ with check (
                     const uniqueId = window.crypto && crypto.randomUUID
                         ? crypto.randomUUID()
                         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-                    const path = `${uniqueId}-${safeName}`;
-                    const { error: uploadError } = await supabaseClient.storage.from(VIDEO_BUCKET).upload(path, file, { contentType: file.type });
+                    uploadedObjectPath = `${currentUser.id}/${uniqueId}-${safeName}`;
+                    const { error: uploadError } = await supabaseClient.storage.from(VIDEO_BUCKET).upload(uploadedObjectPath, file, { contentType: file.type });
                     if (uploadError) throw uploadError;
-                    const { data: publicUrl } = supabaseClient.storage.from(VIDEO_BUCKET).getPublicUrl(path);
+                    const { data: publicUrl } = supabaseClient.storage.from(VIDEO_BUCKET).getPublicUrl(uploadedObjectPath);
                     video.video_url = publicUrl.publicUrl;
                 } else if (file) {
                     video.video_url = URL.createObjectURL(file);
@@ -966,6 +1275,10 @@ with check (
                 closeVideoUpload();
             } catch (error) {
                 console.error('Video upload failed:', error);
+                if (uploadedObjectPath && supabaseClient) {
+                    const { error: cleanupError } = await supabaseClient.storage.from(VIDEO_BUCKET).remove([uploadedObjectPath]);
+                    if (cleanupError) console.error('Could not remove incomplete video upload:', cleanupError);
+                }
                 showVideoMessage('Upload failed. Check your connection and Supabase storage settings.', true);
             } finally {
                 button.disabled = false;
@@ -973,20 +1286,71 @@ with check (
             }
         }
 
+        async function loadSocialData(videos) {
+            videoLikeCounts = new Map();
+            videoCommentCounts = new Map();
+            likedVideoIds = new Set();
+            savedVideoIds = new Set();
+            followedCreatorIds = new Set();
+            creatorNames = new Map();
+            const ids = videos.map(video => video.id).filter(Number.isSafeInteger);
+            const creators = [...new Set(videos.map(video => video.user_id).filter(Boolean))];
+            if (!ids.length) return;
+
+            const queries = [
+                supabaseClient.from('video_likes').select('video_id').in('video_id', ids),
+                supabaseClient.from('video_comments').select('video_id').in('video_id', ids),
+                creators.length
+                    ? supabaseClient.from('profiles').select('user_id,username').in('user_id', creators)
+                    : Promise.resolve({ data: [], error: null })
+            ];
+            if (currentUser) {
+                queries.push(supabaseClient.from('video_likes').select('video_id').eq('user_id', currentUser.id).in('video_id', ids));
+                queries.push(supabaseClient.from('video_saves').select('video_id').eq('user_id', currentUser.id));
+                queries.push(supabaseClient.from('creator_follows').select('creator_id').eq('follower_id', currentUser.id));
+            }
+            const results = await Promise.all(queries);
+            results.forEach(result => {
+                if (result.error) throw result.error;
+            });
+            results[0].data.forEach(row => videoLikeCounts.set(row.video_id, (videoLikeCounts.get(row.video_id) || 0) + 1));
+            results[1].data.forEach(row => videoCommentCounts.set(row.video_id, (videoCommentCounts.get(row.video_id) || 0) + 1));
+            results[2].data.forEach(row => creatorNames.set(row.user_id, row.username));
+            if (currentUser) {
+                results[3].data.forEach(row => likedVideoIds.add(row.video_id));
+                results[4].data.forEach(row => savedVideoIds.add(row.video_id));
+                results[5].data.forEach(row => followedCreatorIds.add(row.creator_id));
+            }
+        }
+
         function renderVideos() {
             const feed = document.getElementById('videoFeed');
             const search = document.getElementById('videoSearch').value.trim().toLowerCase();
             const state = document.getElementById('videoStateFilter').value;
-            const videos = [...onlineVideos, ...demoVideos]
-                .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-                .filter(video => {
+            let videos = [...onlineVideos, ...demoVideos].filter(video => {
                 const text = `${video.title} ${video.state} ${video.city} ${video.description}`.toLowerCase();
                 const source = parsePublicVideoLink(video.video_url)?.source.toLowerCase() || 'uploaded';
                 return (!search || text.includes(search)) && (!state || video.state === state) &&
                     (videoSourceFilter === 'all' || source === videoSourceFilter);
             });
+            if (videoFeedMode === 'following') {
+                videos = videos.filter(video => followedCreatorIds.has(video.user_id));
+            } else if (videoFeedMode === 'saved') {
+                videos = videos.filter(video => savedVideoIds.has(video.id));
+            }
+            videos.sort((a, b) => {
+                if (videoFeedMode === 'trending') {
+                    return (videoLikeCounts.get(b.id) || 0) - (videoLikeCounts.get(a.id) || 0);
+                }
+                return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+            });
             if (!videos.length) {
-                feed.innerHTML = '<div class="sm:col-span-2 xl:col-span-3 2xl:col-span-4 rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500"><i class="fa-solid fa-film mb-3 block text-3xl text-slate-300"></i>No videos found. Share a public video link or upload footage you own.</div>';
+                const emptyMessage = videoFeedMode === 'following'
+                    ? currentUser ? 'No videos from followed creators yet. Follow a creator from the community feed.' : 'Sign in to follow creators and build your feed.'
+                    : videoFeedMode === 'saved'
+                        ? currentUser ? 'No saved videos yet. Save a post and it will show up here.' : 'Sign in to save videos and find them here later.'
+                        : 'No videos found yet. Share a link to a public video you have permission to post.';
+                feed.innerHTML = `<div class="sm:col-span-2 xl:col-span-3 2xl:col-span-4 rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500"><i class="fa-solid fa-film mb-3 block text-3xl text-slate-300"></i>${escapeHtml(emptyMessage)}${!currentUser && (videoFeedMode === 'following' || videoFeedMode === 'saved') ? '<br><button onclick="openAuthDialog()" class="mt-3 rounded-lg bg-emerald-600 px-4 py-2 font-bold text-white">Sign in</button>' : ''}</div>`;
                 return;
             }
             feed.innerHTML = videos.map(video => `
@@ -995,10 +1359,24 @@ with check (
                         ${renderVideoPlayer(video.video_url)}
                     </div>
                     <div class="p-4">
+                        <div class="mb-3 flex items-center justify-between gap-2">
+                            <div class="flex min-w-0 items-center gap-2">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-black text-emerald-800">${escapeHtml((creatorNames.get(video.user_id) || 'C').slice(0, 1).toUpperCase())}</span>
+                                <div class="min-w-0">
+                                    <p class="truncate text-xs font-bold text-slate-800">${escapeHtml(creatorNames.get(video.user_id) || 'Community creator')}</p>
+                                    <p class="truncate text-[11px] text-slate-500">${escapeHtml([video.city, video.state].filter(Boolean).join(', '))}</p>
+                                </div>
+                            </div>
+                            ${video.user_id && video.user_id !== currentUser?.id ? `<button onclick="toggleCreatorFollow('${escapeHtml(video.user_id)}')" class="shrink-0 rounded-full px-3 py-1 text-xs font-bold ${followedCreatorIds.has(video.user_id) ? 'bg-slate-100 text-slate-700' : 'bg-emerald-50 text-emerald-700'}">${followedCreatorIds.has(video.user_id) ? 'Following' : 'Follow'}</button>` : ''}
+                        </div>
                         <h3 class="font-bold text-slate-900 line-clamp-2">${escapeHtml(video.title)}</h3>
-                        <p class="text-xs font-semibold text-emerald-700 mt-2"><i class="fa-solid fa-location-dot mr-1"></i>${escapeHtml([video.city, video.state].filter(Boolean).join(', '))}</p>
                         <p class="text-sm text-slate-600 mt-2 line-clamp-3">${escapeHtml(video.description)}</p>
-                        <div class="flex items-center justify-between mt-3 text-[11px] text-slate-400">
+                        <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                            <button onclick="toggleVideoLike(${Number.isSafeInteger(video.id) ? video.id : 0})" aria-pressed="${likedVideoIds.has(video.id)}" class="rounded-lg px-2 py-2 text-xs font-bold ${likedVideoIds.has(video.id) ? 'text-rose-600' : 'text-slate-600 hover:bg-slate-100'}"><i class="fa-${likedVideoIds.has(video.id) ? 'solid' : 'regular'} fa-heart mr-1"></i>${videoLikeCounts.get(video.id) || 0}</button>
+                            <button onclick="${Number.isSafeInteger(video.id) ? `openComments(${video.id})` : 'openAuthDialog()'}" class="rounded-lg px-2 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"><i class="fa-regular fa-comment mr-1"></i>${videoCommentCounts.get(video.id) || 0} comments</button>
+                            <button onclick="toggleSavedVideo(${Number.isSafeInteger(video.id) ? video.id : 0})" aria-pressed="${savedVideoIds.has(video.id)}" class="rounded-lg px-2 py-2 text-xs font-bold ${savedVideoIds.has(video.id) ? 'text-emerald-700' : 'text-slate-600 hover:bg-slate-100'}"><i class="fa-${savedVideoIds.has(video.id) ? 'solid' : 'regular'} fa-bookmark mr-1"></i>${savedVideoIds.has(video.id) ? 'Saved' : 'Save'}</button>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between text-[11px] text-slate-400">
                             <span>${video.created_at ? new Date(video.created_at).toLocaleDateString('en-IN') : ''}</span>
                             ${getVideoSource(video.video_url)}
                         </div>
@@ -1241,33 +1619,56 @@ with check (
             publisherContainer.replaceChildren(...publisherChips);
         }
 
-        async function loadVideos() {
+        async function loadVideos(loadMore = false) {
             const notice = document.getElementById('videoModeNotice');
             const button = document.getElementById('refreshVideosButton');
+            const moreButton = document.getElementById('loadMoreVideosButton');
             const refreshStatus = document.getElementById('videoRefreshStatus');
             if (isLoadingVideos) return;
             isLoadingVideos = true;
-            button.disabled = true;
-            button.innerHTML = '<i class="fa-solid fa-rotate fa-spin mr-2"></i>Refreshing...';
+            if (!loadMore) {
+                nextVideoOffset = 0;
+                hasMoreVideos = false;
+                onlineVideos = [];
+                button.disabled = true;
+                button.innerHTML = '<i class="fa-solid fa-rotate fa-spin mr-2"></i>Refreshing...';
+            } else {
+                moreButton.disabled = true;
+                moreButton.textContent = 'Loading more...';
+            }
             if (!supabaseClient) {
                 document.getElementById('supabaseSetupGuide').classList.add('hidden');
                 notice.innerHTML = '<i class="fa-solid fa-circle-info mr-2"></i>Demo mode is active. Configure Supabase to publish videos for everyone online.';
                 renderVideos();
                 refreshStatus.textContent = `Demo feed refreshed at ${new Date().toLocaleTimeString('en-IN')}.`;
                 isLoadingVideos = false;
-                button.disabled = false;
-                button.innerHTML = '<i class="fa-solid fa-rotate mr-2"></i>Refresh Feed';
+                moreButton.classList.add('hidden');
+                if (!loadMore) {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fa-solid fa-rotate mr-2"></i>Refresh Feed';
+                }
                 return;
             }
             notice.className = 'mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800';
             try {
-                const { data, error } = await supabaseClient.from('videos').select('title,state,city,description,video_url,created_at').order('created_at', { ascending: false });
+                const start = loadMore ? nextVideoOffset : 0;
+                const { data, error } = await supabaseClient.from('videos')
+                    .select('id,user_id,title,state,city,description,video_url,created_at')
+                    .order('created_at', { ascending: false })
+                    .range(start, start + VIDEO_PAGE_SIZE - 1);
                 if (error) throw error;
-                onlineVideos = data || [];
+                const page = data || [];
+                onlineVideos = loadMore ? [...onlineVideos, ...page] : page;
+                nextVideoOffset = start + page.length;
+                hasMoreVideos = page.length === VIDEO_PAGE_SIZE;
+                await loadSocialData(onlineVideos);
                 updateStateFilter();
                 renderVideos();
+                moreButton.classList.toggle('hidden', !hasMoreVideos);
                 document.getElementById('supabaseSetupGuide').classList.add('hidden');
-                notice.innerHTML = '<i class="fa-solid fa-cloud mr-2"></i>Online community videos are visible. Publishing requires a signed-in account; this site does not currently provide sign-in. External videos should stay with their publisher and be shared with source credit.';
+                notice.innerHTML = currentUser
+                    ? '<i class="fa-solid fa-cloud mr-2"></i>Signed in as a creator. You can publish videos, follow creators, save posts, and comment.'
+                    : '<i class="fa-solid fa-cloud mr-2"></i>Public community feed is active. Sign in to publish, follow creators, save videos, and comment.';
                 refreshStatus.textContent = `Feed refreshed at ${new Date().toLocaleTimeString('en-IN')}.`;
             } catch (error) {
                 console.error('Could not load videos:', error);
@@ -1275,12 +1676,17 @@ with check (
                 notice.innerHTML = error.code === 'PGRST205'
                     ? '<i class="fa-solid fa-triangle-exclamation mr-2"></i>Supabase is connected, but the videos table is not created yet. Run the setup SQL.'
                     : '<i class="fa-solid fa-triangle-exclamation mr-2"></i>Online video feed is temporarily unavailable. Try refreshing.';
-                document.getElementById('supabaseSetupGuide').classList.toggle('hidden', error.code !== 'PGRST205');
+                document.getElementById('supabaseSetupGuide').classList.toggle('hidden', !['PGRST205', '42P01'].includes(error.code));
+                moreButton.classList.add('hidden');
                 refreshStatus.textContent = `Last refresh attempt: ${new Date().toLocaleTimeString('en-IN')}.`;
             } finally {
                 isLoadingVideos = false;
-                button.disabled = false;
-                button.innerHTML = '<i class="fa-solid fa-rotate mr-2"></i>Refresh Feed';
+                moreButton.disabled = false;
+                moreButton.textContent = 'Load more videos';
+                if (!loadMore) {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fa-solid fa-rotate mr-2"></i>Refresh Feed';
+                }
             }
         }
 
@@ -1294,15 +1700,33 @@ with check (
 
         document.addEventListener('DOMContentLoaded', () => {
             setVideoFeedMode('news');
-            loadVideos();
             loadCorruptionNews();
             document.getElementById('siteSearchInput').addEventListener('input', renderSiteSearchResults);
             document.getElementById('videoSearch').addEventListener('input', updateOnlineVideoSearchLink);
             updateOnlineVideoSearchLink();
+            if (supabaseClient) {
+                supabaseClient.auth.onAuthStateChange((_event, session) => {
+                    window.setTimeout(() => {
+                        updateCurrentUser(session?.user || null).catch(error => console.error('Could not update signed-in account:', error));
+                    }, 0);
+                });
+                supabaseClient.auth.getSession().then(({ data, error }) => {
+                    if (error) throw error;
+                    return updateCurrentUser(data.session?.user || null);
+                }).catch(error => {
+                    console.error('Could not restore signed-in account:', error);
+                    showSocialNotice('Could not restore the sign-in session. Try signing in again.', true);
+                    loadVideos();
+                });
+            } else {
+                loadVideos();
+            }
             document.addEventListener('keydown', event => {
                 if (event.key === 'Escape') {
                     closeVideoUpload();
                     closeSearchDialog();
+                    closeAuthDialog();
+                    closeComments();
                 }
                 if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
                     event.preventDefault();

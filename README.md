@@ -1,10 +1,10 @@
 # Corruption Free India
 
-A static citizen-information demo with site-wide search, publisher-attributed news discovery, and community video links.
+A source-linked community video and citizen-information site with account creation, creator profiles, video publishing, likes, comments, follows, saved videos, search, and publisher-attributed news discovery.
 
 ## Run locally
 
-Open `index.html` in a browser. The news converter and Supabase features require an internet connection. Search also indexes content loaded in the current page.
+Open `index.html` in a browser. Search, news and YouTube discovery require an internet connection. Supabase-backed accounts and social features require the setup in `social-feed-setup.sql`.
 
 ## Deploy to Netlify
 
@@ -14,7 +14,13 @@ The Content Security Policy allows the existing Tailwind CDN build, which requir
 
 ## Supabase
 
-`index.html` uses a Supabase publishable key, which is intended for browser use. Never put a `service_role` key or other secret in this static site. Apply the SQL shown in the video feed only after reviewing it. Public visitors have read-only access; publishing requires a signed-in Supabase user. This page does not yet include sign-in, and storage upload policies should remain disabled until authentication, moderation, and server-side abuse controls are configured.
+`index.html` uses a Supabase publishable key, which is intended for browser use. Never put a `service_role` key or other secret in this static site.
+
+1. Run `social-feed-setup.sql` in the linked Supabase SQL Editor to create profiles, videos, likes, comments, follows, saves, row-level security policies, and the video bucket.
+2. In Supabase Authentication settings, enable email/password sign-in, set the site URL to `https://corruption-free-india.netlify.app`, and allow that site URL as an email confirmation redirect.
+3. Create an account on the site and confirm the email if Supabase requires it.
+
+The community feed supports public video posts, likes, comments, creator follows, and saved videos. Production operation still needs human moderation and server-side abuse controls.
 
 ## Privacy and reporting limitations
 
@@ -22,7 +28,7 @@ The report form is a local demonstration. It stores submitted fields in the curr
 
 ## News and video sourcing
 
-News headlines and excerpts are publisher-reported and link to the original source. The external RSS conversion service can rate-limit requests. Video discovery opens live YouTube search results; external videos remain with their publishers and are embedded only when a user shares a supported URL. Do not download or republish footage without permission.
+News headlines and excerpts are publisher-reported and link to the original source. The external RSS conversion service can rate-limit requests. Video discovery opens live YouTube search results; external videos remain with their publishers and are embedded only when a signed-in user shares a supported URL. Do not download or republish footage without permission. Community posts and comments are public; do not include private information.
 
 ## License
 
