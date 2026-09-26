@@ -26,4 +26,4 @@ News headlines and excerpts are publisher-reported and link to the original sour
 
 ## License
 
-This source is licensed under the MIT License; see `LICENSE`. The project is not yet published to a public source-control repository.
+This source is licensed under the MIT License; see `LICENSE`. The public repository is [rohitdewan776-sketch/corruption-free-india](https://github.com/rohitdewan776-sketch/corruption-free-india).

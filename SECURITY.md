@@ -16,4 +16,4 @@ Replace CDN-delivered Tailwind with a locally built stylesheet, move scripts out
 
 ## Reporting a vulnerability
 
-After this source is published to a repository, report security issues privately to its repository owner using the host's private vulnerability-reporting feature. Do not post credentials, private incident data, or exploit details in a public issue.
+Report security issues privately to the repository owner using GitHub's private vulnerability-reporting feature if enabled. Otherwise contact the owner through their GitHub profile. Do not post credentials, private incident data, or exploit details in a public issue.
