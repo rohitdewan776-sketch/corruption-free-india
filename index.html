@@ -772,7 +772,7 @@
         const GOOGLE_NEWS_QUERY = '(corruption OR bribery OR bribe OR graft OR vigilance OR kickback OR embezzlement OR fraud OR scam OR extortion OR "disproportionate assets" OR "money laundering") India when:30d';
         const GOOGLE_NEWS_SEARCH_URL = `https://news.google.com/search?q=${encodeURIComponent(GOOGLE_NEWS_QUERY)}&hl=en-IN&gl=IN&ceid=IN%3Aen`;
         const CORRUPTION_NEWS_TERMS = /\b(corrupt(?:ion|ed)?|brib(?:e|ery|es)|graft|vigilance|anti[- ]corruption|anti-graft|kickback|disproportionate assets|money laundering|lokayukta|prevention of corruption|fraud|scam|extortion|embezzlement|misappropriation|cbi|enforcement directorate|ed raid|anti-corruption bureau)\b|भ्रष्टाचार|रिश्वत|घोटाला|भ्रष्टाचारी/i;
-        const NEWS_CACHE_STORAGE_KEY = 'cfi_corruption_news_cache_v2';
+        const NEWS_CACHE_STORAGE_KEY = 'cfi_corruption_news_cache_v3';
         const NEWS_REFRESH_INTERVAL = 30 * 60_000;
         const VIDEO_PAGE_SIZE = 40;
         const NEWS_TOPICS = [
