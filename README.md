@@ -28,7 +28,9 @@ The report form is a local demonstration. It stores submitted fields in the curr
 
 ## News and video sourcing
 
-News headlines and excerpts are publisher-reported and link to the original source. The external RSS conversion service can rate-limit requests. Video discovery opens live YouTube search results; external videos remain with their publishers and are embedded only when a signed-in user shares a supported URL. Do not download or republish footage without permission. Community posts and comments are public; do not include private information.
+The Netlify Function in `netlify/functions/news.js` reads current India RSS feeds from The Hindu, The Indian Express, Times of India, and Hindustan Times, then serves matching headlines and excerpts with links to each publisher's original article. It caches responses at the Netlify edge for 15 minutes; publisher outages are reported while working feeds continue to appear. Deploy the complete folder to Netlify so the function is available. For local function testing, run the site through Netlify Dev rather than opening `index.html` as a `file://` URL.
+
+Video discovery opens live YouTube search results; external videos remain with their publishers and are embedded only when a signed-in user shares a supported URL. Do not download or republish footage without permission. Community posts and comments are public; do not include private information.
 
 ## License
 

@@ -770,10 +770,7 @@
             ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
             : null;
         const GOOGLE_NEWS_QUERY = '(corruption OR bribery OR bribe OR graft OR vigilance OR kickback OR embezzlement OR fraud OR scam OR extortion OR "disproportionate assets" OR "money laundering") India when:30d';
-        const GOOGLE_NEWS_FEED_URL = `https://news.google.com/rss/search?q=${encodeURIComponent(GOOGLE_NEWS_QUERY)}&hl=en-IN&gl=IN&ceid=IN%3Aen`;
-        const NEWS_FEEDS = [
-            { name: 'Google News', url: GOOGLE_NEWS_FEED_URL, googleNews: true, hosts: ['news.google.com'] }
-        ];
+        const GOOGLE_NEWS_SEARCH_URL = `https://news.google.com/search?q=${encodeURIComponent(GOOGLE_NEWS_QUERY)}&hl=en-IN&gl=IN&ceid=IN%3Aen`;
         const CORRUPTION_NEWS_TERMS = /\b(corrupt(?:ion|ed)?|brib(?:e|ery|es)|graft|vigilance|anti[- ]corruption|anti-graft|kickback|disproportionate assets|money laundering|lokayukta|prevention of corruption|fraud|scam|extortion|embezzlement|misappropriation|cbi|enforcement directorate|ed raid|anti-corruption bureau)\b|भ्रष्टाचार|रिश्वत|घोटाला|भ्रष्टाचारी/i;
         const NEWS_CACHE_STORAGE_KEY = 'cfi_corruption_news_cache_v2';
         const NEWS_REFRESH_INTERVAL = 30 * 60_000;
@@ -1429,82 +1426,31 @@
             isLoadingNews = true;
             status.textContent = 'Searching Indian publishers for corruption-related stories...';
 
-            const results = await Promise.allSettled(NEWS_FEEDS.map(async source => {
-                const url = new URL('https://api.rss2json.com/v1/api.json');
-                url.searchParams.set('rss_url', source.url);
+            try {
                 const controller = new AbortController();
                 const timeout = window.setTimeout(() => controller.abort(), 20000);
+                let response;
                 try {
-                    const response = await fetch(url, { signal: controller.signal });
-                    if (!response.ok) throw new Error(`${source.name} feed returned HTTP ${response.status}`);
-                    const payload = await response.json();
-                    if (payload.status !== 'ok' || !Array.isArray(payload.items)) {
-                        throw new Error(`${source.name} feed could not be parsed`);
-                    }
-                    return payload.items.map(item => {
-                        let title = cleanNewsText(item.title);
-                        let description = cleanNewsText(item.description || item.content);
-                        let publisher = source.name;
-                        if (source.googleNews) {
-                            const titleSource = title.match(/\s+-\s+(.+?)\s*$/);
-                            const publisherName = titleSource?.[1]?.trim() || '';
-                            if (publisherName) publisher = publisherName;
-                            if (titleSource) {
-                                title = title.slice(0, titleSource.index).trim();
-                                description = description
-                                    .replace(title, '')
-                                    .replace(new RegExp(`\\s*${publisherName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i'), '')
-                                    .trim();
-                            }
-                        }
-                        let articleUrl;
-                        try {
-                            articleUrl = new URL(item.link);
-                        } catch {
-                            return null;
-                        }
-                        const host = articleUrl.hostname.toLowerCase().replace(/^www\./, '');
-                        const isSourceHost = source.hosts.some(allowed => host === allowed || host.endsWith(`.${allowed}`));
-                        if (!isSourceHost || articleUrl.protocol !== 'https:' || !CORRUPTION_NEWS_TERMS.test(`${title} ${description}`)) return null;
-                        const imageCandidate = item.thumbnail || item.enclosure?.link || '';
-                        let imageUrl = '';
-                        try {
-                            const image = new URL(imageCandidate);
-                            if (image.protocol === 'https:') imageUrl = image.href;
-                        } catch {
-                            imageUrl = '';
-                        }
-                        return {
-                            title,
-                            description: description.slice(0, 320),
-                            url: articleUrl.href,
-                            source: publisher,
-                            imageUrl,
-                            publishedAt: item.pubDate || ''
-                        };
-                    }).filter(Boolean);
+                    response = await fetch('/.netlify/functions/news', { signal: controller.signal });
                 } finally {
                     window.clearTimeout(timeout);
                 }
-            }));
-
-            try {
-                const successful = results.filter(result => result.status === 'fulfilled');
-                const failures = results.filter(result => result.status === 'rejected');
-                const failedSources = results.flatMap((result, index) => result.status === 'rejected' ? [NEWS_FEEDS[index].name] : []);
-                if (!successful.length) {
-                    const rateLimited = results.some(result => result.status === 'rejected' && /HTTP 429|rate limit/i.test(String(result.reason?.message || '')));
-                    throw new Error(rateLimited ? 'The news feed service is temporarily rate-limited.' : `The news search failed: ${failedSources.join(', ')}.`);
-                }
-
-                const unique = new Map();
-                successful.flatMap(result => result.value).forEach(item => {
-                    const normalizedTitle = item.title.toLocaleLowerCase().replace(/^video\s*\|\s*/i, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-                    if (!unique.has(normalizedTitle)) unique.set(normalizedTitle, item);
-                });
-                corruptionNewsItems = [...unique.values()]
-                    .sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
-                    .slice(0, 60);
+                if (!response.ok) throw new Error(`Publisher news service returned HTTP ${response.status}`);
+                const payload = await response.json();
+                if (!Array.isArray(payload.items)) throw new Error('Publisher news service returned invalid data');
+                corruptionNewsItems = payload.items.map(item => {
+                    const articleUrl = new URL(item.url);
+                    if (articleUrl.protocol !== 'https:' || !CORRUPTION_NEWS_TERMS.test(`${item.title} ${item.description}`)) return null;
+                    return {
+                        title: cleanNewsText(item.title),
+                        description: cleanNewsText(item.description).slice(0, 320),
+                        url: articleUrl.href,
+                        source: cleanNewsText(item.source),
+                        imageUrl: item.imageUrl && new URL(item.imageUrl).protocol === 'https:' ? item.imageUrl : '',
+                        publishedAt: item.publishedAt || ''
+                    };
+                }).filter(item => item && item.title && item.source);
+                corruptionNewsItems = corruptionNewsItems.slice(0, 60);
                 renderCorruptionNews();
                 const refreshedAt = new Date().toLocaleTimeString('en-IN');
                 const publisherCount = new Set(corruptionNewsItems.map(item => item.source)).size;
@@ -1518,24 +1464,24 @@
                 }
                 status.textContent = !publisherCount
                     ? `Checked at ${refreshedAt}. No matching stories were found in this search.`
-                    : failures.length
-                        ? `Updated ${refreshedAt} with stories from ${publisherCount} publishers. Unavailable feeds: ${failedSources.join(', ')}.`
+                    : payload.sourcesFailed?.length
+                        ? `Updated ${refreshedAt} with stories from ${publisherCount} publishers. Unavailable feeds: ${payload.sourcesFailed.join(', ')}.`
                         : `Updated ${refreshedAt} with stories from ${publisherCount} publishers. Checks again in 30 minutes.`;
             } catch (error) {
                 console.error('Could not refresh corruption news:', error);
                 const rateLimited = /rate-limited|HTTP 429/i.test(String(error.message || ''));
                 status.textContent = corruptionNewsItems.length
                     ? rateLimited
-                        ? 'The feed service is temporarily rate-limited. Showing cached headlines.'
+                        ? 'Publisher feeds are temporarily unavailable. Showing cached headlines.'
                         : 'Could not refresh right now. Showing previously loaded headlines.'
                     : rateLimited
-                        ? 'The feed service is temporarily rate-limited. Try again later or open the live search.'
+                        ? 'Publisher feeds are temporarily unavailable. Try again later or open the live search.'
                         : 'News search could not be loaded. Check your connection or open the live search.';
                 if (!corruptionNewsItems.length) {
                     document.getElementById('corruptionNewsFeed').innerHTML = `
                         <div class="sm:col-span-2 xl:col-span-3 2xl:col-span-4 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
                             <i class="fa-solid fa-newspaper mb-3 block text-3xl text-slate-300"></i>
-                            The automatic feed is temporarily unavailable. <a href="${GOOGLE_NEWS_FEED_URL}" target="_blank" rel="noopener noreferrer" class="font-bold text-emerald-700 underline">Open the live India news search</a>.
+                            The automatic feed is temporarily unavailable. <a href="${GOOGLE_NEWS_SEARCH_URL}" target="_blank" rel="noopener noreferrer" class="font-bold text-emerald-700 underline">Open the live India news search</a>.
                         </div>`;
                 }
             } finally {
